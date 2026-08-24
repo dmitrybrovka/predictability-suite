@@ -38,3 +38,5 @@
 - Add comments or findings inline
 - Link to relevant resources or documentation
 - Items are numbered sequentially for easy reference
+- Quality gates from the constitution (Ruff, format, mypy, pytest, pre-commit)
+  apply to any implementation work this checklist covers; they are not optional.

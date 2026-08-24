@@ -11,6 +11,13 @@
 ## User Scenarios & Testing *(mandatory)*
 
 <!--
+  Constitution III (Test-First): Independent Test and Acceptance Scenarios
+  are not documentation-only. Implementation MUST add automated tests that
+  map to these scenarios before production code. Default suite: pytest,
+  no live network.
+-->
+
+<!--
   IMPORTANT: User stories should be PRIORITIZED as user journeys ordered by importance.
   Each user story/journey must be INDEPENDENTLY TESTABLE - meaning if you implement just ONE of them,
   you should still have a viable MVP (Minimum Viable Product) that delivers value.

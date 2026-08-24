@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Run the project interpreter for pre-commit's local hooks, which do not
+# inherit an activated virtualenv. Fails loudly rather than falling back to a
+# system interpreter, so gates never run against the wrong environment.
+set -euo pipefail
+
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+python="${VIRTUAL_ENV:-${root}/.venv}/bin/python"
+
+if [[ ! -x "${python}" ]]; then
+  echo "No project interpreter at ${python}" >&2
+  echo "Create it first:" >&2
+  echo "  python -m venv .venv && .venv/bin/pip install -e \".[dev]\"" >&2
+  exit 1
+fi
+
+exec "${python}" "$@"

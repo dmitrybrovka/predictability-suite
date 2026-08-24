@@ -40,7 +40,17 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+Evaluate the plan against `.specify/memory/constitution.md`. Record
+PASS / FAIL / PASS WITH NOTE for each principle:
+
+- **I. Library-First**: Importable `src/` library; no v1-only HTTP/server product
+- **II. CLI Interface**: Operator capabilities exposed as CLI; JSON + human output
+- **III. Test-First**: Automated tests planned (unit, contract, integration); fixtures not live network
+- **IV. Contract and Integration Testing**: Protocol/CLI contracts have tests
+- **V. Quality Gates**: Stay on Ruff + mypy + pytest + pre-commit; do not add a second linter/formatter
+- **VI. Simplicity**: Justified complexity only (table below)
+
+Unjustified FAIL blocks Phase 0. Justified deviations go in Complexity Tracking.
 
 ## Project Structure
 

@@ -36,19 +36,20 @@ Variants: [research.md](./research.md).
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-`.specify/memory/constitution.md` is the **unratified spec-kit template**. No ratified gates to fail.
+Constitution v1.0.0 (ratified 2026-08-24).
 
-| Implied gate | How this plan complies |
-|--------------|------------------------|
-| Library-first | `src/predictability/` importable; no FastAPI in v1 |
-| CLI | `ingest`, `train`, `predict`, `evaluate` — no `serve` |
-| Test-first | Protocol + walk-forward fixtures before implement |
-| Integration contracts | CLI + adapter/factor/model protocols; OpenAPI filed as v2 |
-| Simplicity | SQLite, full refit, epic grain, HTTP deferred |
+| Principle | How this plan complies |
+|-----------|------------------------|
+| I. Library-First | `src/predictability/` importable; no FastAPI in v1 |
+| II. CLI Interface | `ingest`, `train`, `predict`, `evaluate` — no `serve` |
+| III. Test-First | Protocol + walk-forward fixtures before implement; pytest + 90% coverage |
+| IV. Contract tests | CLI + adapter/factor/model protocols; OpenAPI filed as v2 |
+| V. Quality Gates | Ruff lint/format, mypy strict, pytest, pre-commit; no second formatter |
+| VI. Simplicity | SQLite, full refit, epic grain, HTTP deferred |
 
-**Gate status (pre-research)**: PASS WITH NOTE.
+**Gate status (pre-research)**: PASS WITH NOTE (constitution was still a template).
 
-**Gate status (post-design / post-grill)**: PASS WITH NOTE. v1 is simpler than the first draft (no HTTP). Three model names are required by FR-011 (bias + two GBM libraries).
+**Gate status (post-design / post-grill / post-ratification)**: PASS. v1 is simpler than the first draft (no HTTP). Three model names are required by FR-011 (bias + two GBM libraries). Complexity Tracking records that dual-GBM exception.
 
 ## Project Structure
 

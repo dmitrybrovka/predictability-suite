@@ -1,0 +1,31 @@
+---
+description: Test-first rules for pytest suites
+globs: "tests/**/*.py"
+alwaysApply: false
+---
+
+# Testing
+
+Write the test first and confirm it fails, then implement.
+
+| Suite | Path | Use for |
+|-------|------|---------|
+| unit | `tests/unit/` | Pure functions, no I/O |
+| contract | `tests/contract/` | Adapter/factor/model/CLI protocols |
+| integration | `tests/integration/` | ingest → train → predict → evaluate |
+
+- Mock adapter and changelog fixtures; no live network in default pytest.
+- Map acceptance scenarios from the spec to test names where practical.
+- Use `tmp_path` for SQLite files; never write `predictability.sqlite` in the repo root from tests.
+- Keep tests typed; they are included in mypy strict.
+
+```python
+# ❌ BAD
+def test_train():
+    train()  # hits production Jira
+
+# ✅ GOOD
+def test_train_excludes_open_epics(tmp_path: Path) -> None:
+    db = tmp_path / "test.sqlite"
+    ...
+```

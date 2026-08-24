@@ -199,7 +199,9 @@ R / TypeScript — rejected (ecosystem). Poetry-only — unnecessary.
 
 ## R9. Constitution
 
-Unratified template. Plan does not rewrite it.
+Ratified v1.0.0 (2026-08-24): library-first, CLI, test-first, contract tests,
+quality gates (Ruff + mypy + pytest + pre-commit), simplicity. See
+`.specify/memory/constitution.md`.
 
 ---
 

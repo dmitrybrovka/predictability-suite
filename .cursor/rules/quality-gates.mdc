@@ -1,0 +1,38 @@
+---
+description: Mandatory test, lint, format, type, and pre-commit gates
+alwaysApply: true
+---
+
+# Quality Gates
+
+Follow `.specify/memory/constitution.md`. If a rule here drifts, the constitution wins.
+
+## MUST on every change
+
+- Add or update tests for new behavior (red → green → refactor). No production code without tests.
+- Keep `src/predictability` coverage at or above 90%.
+- Do not call live Jira/YouTrack in the default pytest suite; use fixtures.
+- Lint and format with **Ruff only**. Do not add Black, isort, flake8, or prettier-for-python.
+- Keep mypy strict passing on `src/` and `tests/`.
+- Do not skip pre-commit (`--no-verify`) except an explicit emergency followed by a fix commit.
+
+## Commands (venv active)
+
+```bash
+ruff check src tests
+ruff format src tests
+python -m mypy
+python -m pytest
+python -m pytest --cov=predictability --cov-report=term-missing --cov-fail-under=90
+pre-commit run --all-files
+```
+
+Plain `pytest` does not enforce coverage; the 90% gate lives in pre-commit and
+CI (`.github/workflows/ci.yml`). Do not reformat `.specify/` or
+`.cursor/skills/` — vendored spec-kit assets are tracked by hash.
+
+## Layout
+
+- Library: `src/predictability/`
+- Tests: `tests/unit/`, `tests/contract/`, `tests/integration/`
+- Tool config: `pyproject.toml` and `.pre-commit-config.yaml` only

@@ -1,0 +1,29 @@
+---
+description: Python 3.11+ style for this library
+globs: "**/*.py"
+alwaysApply: false
+---
+
+# Python
+
+- Target Python 3.11 (`from __future__ import annotations` only if needed).
+- Package imports: `from predictability...` (src layout). No `sys.path` hacks.
+- Type-annotate public functions. `mypy --strict` must pass.
+- Prefer `pathlib.Path` over `os.path`.
+- Pydantic v2 models for external payloads; no person-level fields on public types.
+- CLI: results on stdout, errors on stderr, no traceback on stdout.
+- Do not implement `serve` / FastAPI in v1.
+
+```python
+# ❌ BAD — untyped, silent catch, person score
+def score(user):
+    try:
+        return user.person_slip
+    except Exception:
+        pass
+
+# ✅ GOOD
+def on_time_probability(epic_id: str, team_id: str) -> float:
+    """Team-level on-time probability for one epic."""
+    ...
+```

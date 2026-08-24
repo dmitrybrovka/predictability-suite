@@ -139,7 +139,7 @@ The tasks.md should be immediately executable - each task must be specific enoug
 
 **CRITICAL**: Tasks MUST be organized by user story to enable independent implementation and testing.
 
-**Tests are OPTIONAL**: Only generate test tasks if explicitly requested in the feature specification or if user requests TDD approach.
+**Tests are MANDATORY**: The constitution requires test-first. Every user story MUST include failing tests before implementation. Do not omit test tasks.
 
 ### Checklist Format (REQUIRED)
 

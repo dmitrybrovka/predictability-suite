@@ -1,0 +1,55 @@
+# Quality gates from the constitution (V. Quality Gates).
+# Install: pip install -e ".[dev]" && pre-commit install
+# Run all: pre-commit run --all-files
+default_stages: [pre-commit]
+fail_fast: false
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        # Keep two-space Markdown hard line breaks in specs and docs.
+        args: ["--markdown-linebreak-ext=md"]
+        # Vendored spec-kit assets are hash-tracked in
+        # .specify/integrations/*.manifest.json; reformatting them reads as
+        # drift on upgrade, so whitespace hooks skip them.
+        exclude: &vendored ^(\.specify/|\.cursor/skills/)
+      - id: end-of-file-fixer
+        exclude: *vendored
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+        exclude: *vendored
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        # Walk-forward fixtures are large; generate them where possible.
+        args: ["--maxkb=1024"]
+      - id: debug-statements
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.4
+    hooks:
+      - id: ruff-check
+        args: ["--fix"]
+        types_or: [python, pyi]
+      - id: ruff-format
+        types_or: [python, pyi]
+
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy (strict)
+        entry: scripts/venv-python -m mypy
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: pytest
+        name: pytest (coverage >= 90%)
+        entry: >-
+          scripts/venv-python -m pytest
+          --cov=predictability --cov-report=term-missing --cov-fail-under=90
+        language: system
+        pass_filenames: false
+        always_run: true

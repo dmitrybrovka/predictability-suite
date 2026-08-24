@@ -1,0 +1,415 @@
+# v2 CONTRACT — requirement 5 deferred. Do not implement in feature 001 v1.
+# v1 surface: contracts/cli.md
+openapi: 3.1.0
+info:
+  title: Predictability Suite API
+  version: 0.2.0-deferred
+  description: >
+    v2 intranet HTTP surface (requirement 5). NOT in v1.
+    v1 is library + CLI only (see cli.md). Kept so v2 can implement without redesign.
+servers:
+  - url: http://localhost:8080
+    description: Local / compose
+security:
+  - ApiKeyAuth: []
+  - {}
+paths:
+  /health:
+    get:
+      security: []
+      summary: Liveness
+      operationId: health
+      responses:
+        "200":
+          description: Process is up
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    enum: [ok]
+  /ingest:
+    post:
+      summary: Import canonical items via a registered adapter
+      operationId: ingest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IngestRequest"
+      responses:
+        "200":
+          description: Ingest report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngestReport"
+        "400":
+          $ref: "#/components/responses/ClientError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "502":
+          description: Tracker upstream failure
+  /train:
+    post:
+      summary: Fit factor pipeline + model backend from stored completed items
+      operationId: train
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrainRequest"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelArtifactInfo"
+        "400":
+          $ref: "#/components/responses/ClientError"
+        "409":
+          description: Not enough completed items
+  /predict:
+    post:
+      summary: Predict slip quantiles and on-time probability
+      operationId: predict
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PredictRequest"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PredictResponse"
+        "404":
+          description: No active model artifact
+        "422":
+          $ref: "#/components/responses/ClientError"
+  /evaluate:
+    post:
+      summary: Walk-forward comparison of one or more backends
+      operationId: evaluate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EvaluateRequest"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvaluationReport"
+  /models:
+    get:
+      summary: List stored model artifacts
+      operationId: listModels
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ModelArtifactInfo"
+  /models/{id}:
+    get:
+      summary: Artifact metadata
+      operationId: getModel
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelArtifactInfo"
+        "404":
+          description: Not found
+    post:
+      summary: Activate artifact for serving
+      operationId: activateModel
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelArtifactInfo"
+        "404":
+          description: Not found
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  responses:
+    Unauthorized:
+      description: Missing or invalid API key when REQUIRE_API_KEY is set
+    ClientError:
+      description: Structured validation error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    Error:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+    WorkItemIn:
+      type: object
+      required: [tracker, external_id, team_id, committed_deadline]
+      properties:
+        tracker:
+          type: string
+        external_id:
+          type: string
+        team_id:
+          type: string
+        title:
+          type: string
+        status:
+          type: string
+          enum: [open, done, cancelled]
+        committed_deadline:
+          type: string
+          format: date-time
+        actual_completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        estimate:
+          type: number
+          nullable: true
+        assignee_ids:
+          type: array
+          items:
+            type: string
+        labels:
+          type: array
+          items:
+            type: string
+    IngestRequest:
+      type: object
+      properties:
+        adapter:
+          type: string
+          description: Registry name; omit if posting canonical items directly
+        query:
+          type: object
+          additionalProperties: true
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkItemIn"
+          description: Bypass adapter; canonical upsert
+        allow_partial:
+          type: boolean
+          default: false
+    IngestReport:
+      type: object
+      required: [imported, updated, skipped_no_deadline, invalid]
+      properties:
+        imported:
+          type: integer
+        updated:
+          type: integer
+        skipped_no_deadline:
+          type: integer
+        invalid:
+          type: integer
+        errors:
+          type: array
+          items:
+            type: object
+    TrainRequest:
+      type: object
+      properties:
+        backend:
+          type: string
+          default: empirical_bayes
+        activate:
+          type: boolean
+          default: true
+        incremental:
+          type: boolean
+          default: true
+          description: Refit from full stored history (and partial_fit if backend supports it)
+    ModelArtifactInfo:
+      type: object
+      required: [id, backend, factor_set_hash, train_item_count, is_active]
+      properties:
+        id:
+          type: string
+        backend:
+          type: string
+        backend_version:
+          type: string
+        factor_set_hash:
+          type: string
+        quantiles:
+          type: array
+          items:
+            type: number
+        slip_unit:
+          type: string
+        train_item_count:
+          type: integer
+        train_team_count:
+          type: integer
+        data_cutoff:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        is_active:
+          type: boolean
+        cold_start_teams:
+          type: integer
+    PredictRequest:
+      type: object
+      required: [items]
+      properties:
+        model_id:
+          type: string
+          description: Defaults to active artifact
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/WorkItemIn"
+    PredictabilityResult:
+      type: object
+      required:
+        - tracker
+        - external_id
+        - team_id
+        - expected_slip
+        - quantiles
+        - on_time_probability
+        - cold_start
+        - model_id
+        - backend
+        - factor_set_hash
+      properties:
+        tracker:
+          type: string
+        external_id:
+          type: string
+        team_id:
+          type: string
+        committed_deadline:
+          type: string
+          format: date-time
+        expected_slip:
+          type: number
+        quantiles:
+          type: object
+          additionalProperties:
+            type: number
+          description: Keys "0.5", "0.9", ...
+        on_time_probability:
+          type: number
+          minimum: 0
+          maximum: 1
+        cold_start:
+          type: boolean
+        team_history_n:
+          type: integer
+        model_id:
+          type: string
+        backend:
+          type: string
+        factor_set_hash:
+          type: string
+    PredictResponse:
+      type: object
+      required: [results]
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/PredictabilityResult"
+    EvaluateRequest:
+      type: object
+      properties:
+        backends:
+          type: array
+          items:
+            type: string
+          default: [empirical_bayes, quantile_gbm]
+        min_train:
+          type: integer
+          default: 200
+        horizon_days:
+          type: integer
+          default: 14
+    EvaluationRow:
+      type: object
+      properties:
+        backend:
+          type: string
+        artifact_id:
+          type: string
+          nullable: true
+        mae_slip:
+          type: number
+        pinball:
+          type: object
+          additionalProperties:
+            type: number
+        coverage_p50_p90:
+          type: number
+        brier_on_time:
+          type: number
+        n_eval:
+          type: integer
+    EvaluationReport:
+      type: object
+      required: [id, rows]
+      properties:
+        id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/EvaluationRow"

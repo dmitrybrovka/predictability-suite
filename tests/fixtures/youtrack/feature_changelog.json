@@ -1,0 +1,20 @@
+{
+  "issues": [
+    {
+      "idReadable": "PROJ-1",
+      "kind": "feature",
+      "fields": {
+        "type": "Feature",
+        "summary": "Feature one",
+        "Team": "alpha",
+        "due": "2026-02-01T00:00:00Z",
+        "resolved": "2026-02-10T00:00:00Z",
+        "created": "2025-12-01T00:00:00Z"
+      },
+      "activities": [
+        {"timestamp": "2025-12-01T00:00:00Z", "due": "2026-01-15T00:00:00Z"},
+        {"timestamp": "2026-01-05T00:00:00Z", "due": "2026-02-01T00:00:00Z"}
+      ]
+    }
+  ]
+}

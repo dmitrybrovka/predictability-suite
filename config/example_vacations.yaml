@@ -1,0 +1,10 @@
+# Team vacation intervals (v1: team-level only).
+vacations:
+  - team_id: late-team
+    start: 2026-07-01
+    end: 2026-07-14
+    capacity_factor: 0.0
+  - team_id: ontime-team
+    start: 2026-12-24
+    end: 2026-12-31
+    capacity_factor: 0.0

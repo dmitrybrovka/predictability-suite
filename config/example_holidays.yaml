@@ -1,0 +1,5 @@
+# Organization holidays (ISO dates). Weekends are configured separately.
+holidays:
+  - 2026-01-01
+  - 2026-05-01
+  - 2026-12-25

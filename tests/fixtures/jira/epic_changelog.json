@@ -1,0 +1,42 @@
+{
+  "issues": [
+    {
+      "key": "PROJ-1",
+      "kind": "epic",
+      "fields": {
+        "summary": "Epic one",
+        "issuetype": {"name": "Epic"},
+        "duedate": "2026-02-01",
+        "customfield_team": "alpha",
+        "status": {"name": "Done"},
+        "resolutiondate": "2026-02-10T00:00:00Z",
+        "created": "2025-12-01T00:00:00Z",
+        "updated": "2026-02-10T00:00:00Z"
+      },
+      "changelog": {
+        "histories": [
+          {
+            "created": "2025-12-01T00:00:00Z",
+            "items": [{"field": "duedate", "to": "2026-01-15"}]
+          },
+          {
+            "created": "2026-01-05T00:00:00Z",
+            "items": [{"field": "duedate", "to": "2026-02-01"}]
+          }
+        ]
+      }
+    },
+    {
+      "key": "PROJ-2",
+      "fields": {
+        "summary": "Child",
+        "issuetype": {"name": "Story"},
+        "parent": {"key": "PROJ-1"},
+        "customfield_team": "alpha",
+        "status": "Done",
+        "created": "2025-12-02T00:00:00Z",
+        "updated": "2026-01-10T00:00:00Z"
+      }
+    }
+  ]
+}

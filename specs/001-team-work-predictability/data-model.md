@@ -142,6 +142,7 @@ No person entity. No org chart.
 | `factor_set_hash` | string | |
 | `quantiles` | float[] | default `[0.5, 0.9]` |
 | `slip_unit` | string | |
+| `min_history` | int | Cold-start threshold at train time; `predict` uses this, not current config |
 | `train_epic_count` | int | |
 | `train_team_count` | int | |
 | `data_cutoff` | datetime | max `actual_completed_at` in train |

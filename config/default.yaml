@@ -1,0 +1,31 @@
+slip:
+  unit: working_days
+  timezone: UTC
+  weekend: [5, 6]
+model:
+  backend: empirical_bayes
+  min_history: 20
+  shrinkage_k: 10
+  quantiles: [0.5, 0.9]
+factors:
+  - name: team_bias
+    enabled: true
+    params:
+      shrinkage_k: 10
+      min_history: 20
+  - name: capacity_calendar
+    enabled: true
+    params:
+      vacations_path: config/example_vacations.yaml
+      holidays_path: config/example_holidays.yaml
+      timezone: UTC
+  - name: cross_team_deps
+    enabled: true
+    params:
+      max_depth: 4
+adapters:
+  mock:
+    team_field: team_id
+    epic_issue_types: [Epic]
+    epic_done: own_then_children
+    due_field: duedate

@@ -40,6 +40,24 @@ dev = [
   "types-PyYAML>=6.0",
 ]
 
+[project.scripts]
+predictability = "predictability.cli:main"
+
+[project.entry-points."predictability.adapters"]
+jira = "predictability.adapters.jira:JiraAdapter"
+youtrack = "predictability.adapters.youtrack:YouTrackAdapter"
+mock = "predictability.adapters.mock:MockAdapter"
+
+[project.entry-points."predictability.factors"]
+team_bias = "predictability.factors.team_bias:TeamBiasFactor"
+capacity_calendar = "predictability.factors.capacity_calendar:CapacityCalendarFactor"
+cross_team_deps = "predictability.factors.cross_team_deps:CrossTeamDepsFactor"
+
+[project.entry-points."predictability.models"]
+empirical_bayes = "predictability.models.empirical_bayes:EmpiricalBayesBackend"
+quantile_catboost = "predictability.models.quantile_catboost:QuantileCatBoostBackend"
+quantile_lightgbm = "predictability.models.quantile_lightgbm:QuantileLightGBMBackend"
+
 [project.urls]
 Homepage = "https://github.com/dmitrybrovka/predictability-suite"
 Documentation = "specs/001-team-work-predictability/spec.md"
@@ -82,7 +100,12 @@ indent-style = "space"
 docstring-code-format = true
 
 [tool.mypy]
-python_version = "3.11"
+# numpy>=2.3 ships PEP 695 `type` aliases in its stubs, which mypy rejects
+# outright under python_version 3.11 ("errors prevented further checking"), so
+# no per-module override can suppress it. Analysing at 3.12 keeps mypy usable;
+# 3.11 compatibility of our own code is enforced by ruff target-version = py311
+# and by running the test suite on 3.11 in CI.
+python_version = "3.12"
 strict = true
 files = ["src", "tests"]
 mypy_path = "src"

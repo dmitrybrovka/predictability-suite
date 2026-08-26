@@ -6,7 +6,7 @@
 
 **Status**: Clarified (grill-me 2026-08-24)
 
-**Input**: User description: "Нужно сделать opensource пакет с предиктивной моделью оценки Team Work Predictability на основе расхождения дедлайна установленного командой и фактической даты выполнения. Требования: (1) конфигурировать модель факторами — индивидуальные особенности команды, взаимосвязи между командами, график отпусков и т.п.; (2) адаптеры для Task Tracker API — Jira, YouTrack и др.; (3) дообучение модели на новых исторических данных и новых командах; (4) сравнение качества моделей и замена библиотеки; (5) простой API и сервис, легко разворачиваемый во внутреннем контуре."
+**Input**: User description: "Build an open-source package with a predictive model of Team Work Predictability from the gap between the deadline the team set and the actual completion date. Requirements: (1) configure the model with factors — team-specific traits, cross-team dependencies, vacation schedules, and the like; (2) adapters for Task Tracker APIs — Jira, YouTrack, and others; (3) continue training on new historical data and new teams; (4) compare model quality and swap the learning library; (5) a simple API and service that is easy to deploy on the internal network."
 
 ## Clarifications *(grill-me)*
 

@@ -18,6 +18,18 @@ def make_epic(
     deadline: datetime | None = None,
     open_item: bool = False,
 ) -> Epic:
+    """Build one synthetic epic with a changelog-sourced deadline.
+
+    Args:
+        external_id: Epic id.
+        team_id: Team id.
+        slip_days: Calendar offset from deadline to completion (ignored if open).
+        tracker: Tracker name, default ``mock``.
+        status: Status when not open.
+        created: Creation timestamp; default 2025-01-01 UTC.
+        deadline: Committed deadline; default created + 30 days.
+        open_item: If True, leave ``actual_completed_at`` null.
+    """
     created_at = created or datetime(2025, 1, 1, tzinfo=UTC)
     committed = deadline or (created_at + timedelta(days=30))
     actual = None if open_item else committed + timedelta(days=slip_days)
@@ -43,6 +55,7 @@ def two_team_history(
     late_team: str = "late-team",
     ontime_team: str = "ontime-team",
 ) -> list[Epic]:
+    """Return two teams with constant late vs on-time slip (US1 bias fixture)."""
     epics: list[Epic] = []
     for i in range(n_per_team):
         epics.append(
@@ -71,6 +84,11 @@ def generate_epics(
     n_epics: int = 120,
     include_open: int = 5,
 ) -> tuple[list[Epic], list[ChildIssue], list[Dependency]]:
+    """Generate a mixed mock history: completed epics, children, and some deps.
+
+    Team 0 is systematically late. A few open epics are appended when
+    ``include_open`` is positive.
+    """
     if n_epics <= 0 or n_teams <= 0:
         return [], [], []
     rng_mod = (seed % 7) - 3
@@ -136,4 +154,5 @@ def generate_epics(
 
 
 def open_epic(team_id: str, *, external_id: str = "OPEN-NEW") -> Epic:
+    """Return one open epic for ``team_id`` with no completion timestamp."""
     return make_epic(external_id=external_id, team_id=team_id, slip_days=0, open_item=True)

@@ -30,7 +30,15 @@ def _read(path: Path) -> dict[str, Any]:
 
 
 class AppConfig:
+    """Loaded YAML/JSON config for slip, model, factors, and adapters."""
+
     def __init__(self, raw: dict[str, Any], *, source: Path | None = None) -> None:
+        """Build from an already-parsed mapping.
+
+        Args:
+            raw: Config document root.
+            source: Path the mapping was read from, if any.
+        """
         self.raw = raw
         self.source = source
         slip = raw.get("slip") or {}
@@ -49,6 +57,17 @@ class AppConfig:
 
     @classmethod
     def load(cls, path: Path | None = None) -> AppConfig:
+        """Load YAML or JSON, defaulting to ``config/default.yaml`` when present.
+
+        Args:
+            path: Explicit config path. ``None`` uses the default file or empty config.
+
+        Returns:
+            Parsed application config.
+
+        Raises:
+            UsageError: File cannot be read or parsed, or the root is not a mapping.
+        """
         if path is None:
             default = Path("config/default.yaml")
             if default.is_file():
@@ -67,12 +86,14 @@ class AppConfig:
         return Path(str(raw_path)) if raw_path else None
 
     def factor_params(self, name: str) -> dict[str, Any]:
+        """Return ``params`` for a named factor, or ``{}`` if it is absent."""
         for spec in self.factors:
             if spec.name == name:
                 return spec.params
         return {}
 
     def factor_enabled(self, name: str) -> bool:
+        """Whether ``name`` is enabled. ``team_bias`` defaults on if omitted."""
         for spec in self.factors:
             if spec.name == name:
                 return spec.enabled

@@ -26,11 +26,14 @@ def _require_catboost() -> Any:
 
 
 class QuantileCatBoostBackend:
+    """Quantile CatBoost backend. Requires the ``[catboost]`` extra."""
+
     name = "quantile_catboost"
     version = "1.0.0"
     quantiles: Sequence[float] = (0.5, 0.9)
 
     def __init__(self) -> None:
+        """Create an unfitted backend."""
         self._models: dict[str, Any] = {}
         self._columns: list[str] = []
         self._fitted = False
@@ -44,6 +47,11 @@ class QuantileCatBoostBackend:
     def fit(
         self, x: FeatureFrame, slip: NDArray[Any], meta: Mapping[str, Any]
     ) -> QuantileCatBoostBackend:
+        """Fit one CatBoost quantile model per requested quantile.
+
+        Raises:
+            ExtraMissingError: ``predictability[catboost]`` is not installed.
+        """
         regressor_cls = _require_catboost()
         qs = tuple(float(q) for q in (meta.get("quantiles") or self.quantiles))
         self.quantiles = qs
@@ -68,6 +76,11 @@ class QuantileCatBoostBackend:
     def predict_quantiles(
         self, x: FeatureFrame, quantiles: Sequence[float] | None = None
     ) -> NDArray[Any]:
+        """Return slip quantiles with shape ``(n_epics, n_quantiles)``.
+
+        Raises:
+            UsageError: Called before ``fit``.
+        """
         if not self._fitted:
             raise UsageError("quantile_catboost is not fitted")
         qs = list(quantiles if quantiles is not None else self.quantiles)
@@ -79,11 +92,13 @@ class QuantileCatBoostBackend:
         return np.column_stack(cols)
 
     def predict_on_time_proba(self, x: FeatureFrame) -> NDArray[Any]:
+        """Approximate P(slip <= 0) as a logistic of p50, not a Gaussian CDF."""
         q50 = self.predict_quantiles(x, [0.5])[:, 0]
         # crude: logistic of negative expected slip
         return 1.0 / (1.0 + np.exp(q50 / 5.0))
 
     def save(self, path: Path) -> None:
+        """Write CatBoost ``.cbm`` files and ``meta.json`` into ``path``."""
         path.mkdir(parents=True, exist_ok=True)
         meta = {"columns": self._columns, "quantiles": list(self.quantiles), "fitted": self._fitted}
         (path / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
@@ -92,6 +107,11 @@ class QuantileCatBoostBackend:
 
     @classmethod
     def load(cls, path: Path) -> QuantileCatBoostBackend:
+        """Restore from ``path``.
+
+        Raises:
+            ExtraMissingError: ``predictability[catboost]`` is not installed.
+        """
         regressor_cls = _require_catboost()
         obj = cls()
         meta = json.loads((path / "meta.json").read_text(encoding="utf-8"))

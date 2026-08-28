@@ -58,8 +58,10 @@ def _instantiate(name: str, config: AppConfig) -> Any:
 
 
 def _warn_training_drift(cfg: AppConfig, artifact: ModelArtifact) -> None:
-    """Config values baked into an artifact keep their training-time meaning; a
-    later edit to them applies to the next `train`, not to existing artifacts."""
+    """Warn when config drifted from values pinned on the artifact.
+
+    Edits apply to the next ``train``, not to existing artifacts.
+    """
     if cfg.slip_unit != artifact.slip_unit:
         logger.warning(
             "config slip unit %r differs from the artifact's %r; scoring in the "
@@ -77,8 +79,11 @@ def _warn_training_drift(cfg: AppConfig, artifact: ModelArtifact) -> None:
 
 
 def _training_window(store: Store, artifact: ModelArtifact) -> list[Epic]:
-    """Completed epics the artifact was trained on, so predict-time factors and
-    team history describe the same data the model saw."""
+    """Completed epics the artifact was trained on.
+
+    Predict-time factors and team history then describe the same data the
+    model saw.
+    """
     history = store.list_completed_epics()
     if artifact.data_cutoff is None:
         return history
@@ -90,6 +95,7 @@ def _training_window(store: Store, artifact: ModelArtifact) -> list[Epic]:
 
 
 def completed_for_train(epics: Sequence[Epic]) -> list[Epic]:
+    """Keep done epics that have both a deadline and an actual completion."""
     return [
         e
         for e in epics
@@ -106,6 +112,21 @@ def train(
     activate: bool = True,
     config: AppConfig | None = None,
 ) -> ModelArtifact:
+    """Full-refit from completed epics in ``db`` and store a new artifact.
+
+    Args:
+        backend: Registry name such as ``empirical_bayes``.
+        db: SQLite path.
+        activate: If True (default), this artifact becomes the one ``predict`` uses.
+        config: Factor/model settings; defaults to ``config/default.yaml``.
+
+    Returns:
+        Stored artifact metadata.
+
+    Raises:
+        EmptyTrainSetError: No completed epics with deadlines.
+        ExtraMissingError: GBM extra is not installed for that backend.
+    """
     cfg = config or AppConfig.load()
     store = Store(db)
     epics = store.list_epics()
@@ -162,6 +183,24 @@ def predict(
     model_id: str | None = None,
     config: AppConfig | None = None,
 ) -> list[PredictabilityResult]:
+    """Score open epics (or ``epics``) with the active or named artifact.
+
+    Factors must hash to the artifact's ``factor_set_hash``. Cold start uses
+    the artifact's pinned ``min_history``, not the current config.
+
+    Args:
+        db: SQLite path.
+        epics: Explicit epics to score. ``None`` loads open epics from the store.
+        model_id: Artifact id; ``None`` uses the active artifact.
+        config: Must match the trained factor set.
+
+    Returns:
+        One row per epic that has a committed deadline.
+
+    Raises:
+        NoActiveModelError: No active artifact and ``model_id`` is omitted.
+        UsageError: Factor set changed since training, or unknown ``model_id``.
+    """
     cfg = config or AppConfig.load()
     store = Store(db)
     artifact = store.get_artifact(model_id)

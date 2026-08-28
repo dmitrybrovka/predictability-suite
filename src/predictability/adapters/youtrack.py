@@ -31,10 +31,13 @@ def _parse_dt(value: str | None) -> datetime | None:
 
 
 class YouTrackAdapter:
+    """YouTrack feature adapter. Default tests use fixtures; live needs ``YOUTRACK_TOKEN``."""
+
     id = "youtrack"
     display_name = "YouTrack"
 
     def __init__(self, config: Mapping[str, Any]) -> None:
+        """Bind team/due fields, epic types, and ``epic_done``."""
         self.config = dict(config)
         self.team_field = str(config.get("team_field", "Team"))
         self.due_field = str(config.get("due_field", "due"))
@@ -44,12 +47,22 @@ class YouTrackAdapter:
         self.epic_done = epic_done_rule(config)
 
     def test_connection(self) -> None:
+        """Require ``YOUTRACK_TOKEN`` unless ``fixture_path`` is set.
+
+        Raises:
+            AdapterAuthError: Live mode without a token.
+        """
         if self.config.get("fixture_path"):
             return
         if not os.environ.get("YOUTRACK_TOKEN"):
             raise AdapterAuthError("YOUTRACK_TOKEN is not set")
 
     def fetch(self, query: TrackerQuery) -> AdapterResult:
+        """Normalize fixture (or refuse live fetch in default tests).
+
+        Raises:
+            AdapterAuthError: No ``fixture_path`` in default CI mode.
+        """
         path = query.get("fixture_path") or self.config.get("fixture_path")
         if not path:
             raise AdapterAuthError(

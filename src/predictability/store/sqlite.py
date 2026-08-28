@@ -42,10 +42,12 @@ _ADDED_COLUMNS: tuple[tuple[str, str, str], ...] = (
 
 
 class Base(DeclarativeBase):
-    pass
+    """SQLAlchemy declarative base for store tables."""
 
 
 class EpicRow(Base):
+    """ORM row for a canonical epic. Primary key is ``(tracker, external_id)``."""
+
     __tablename__ = "epics"
     tracker: Mapped[str] = mapped_column(String, primary_key=True)
     external_id: Mapped[str] = mapped_column(String, primary_key=True)
@@ -63,6 +65,8 @@ class EpicRow(Base):
 
 
 class ChildRow(Base):
+    """ORM row for a child issue used as a factor input."""
+
     __tablename__ = "children"
     tracker: Mapped[str] = mapped_column(String, primary_key=True)
     external_id: Mapped[str] = mapped_column(String, primary_key=True)
@@ -75,6 +79,8 @@ class ChildRow(Base):
 
 
 class DepRow(Base):
+    """ORM row for a directed dependency link."""
+
     __tablename__ = "dependencies"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     tracker: Mapped[str] = mapped_column(String, nullable=False)
@@ -86,6 +92,8 @@ class DepRow(Base):
 
 
 class ArtifactRow(Base):
+    """ORM row for a trained model artifact. At most one ``is_active``."""
+
     __tablename__ = "artifacts"
     id: Mapped[str] = mapped_column(String, primary_key=True)
     backend: Mapped[str] = mapped_column(String, nullable=False)
@@ -132,7 +140,10 @@ def _epic_from_row(row: EpicRow) -> Epic:
 
 
 class Store:
+    """SQLite persistence for epics, children, dependencies, and model artifacts."""
+
     def __init__(self, path: Path | str | None = None) -> None:
+        """Open or create ``path`` (default ``./predictability.sqlite``)."""
         self.path = Path(path) if path is not None else DEFAULT_DB
         self.engine: Engine = create_engine(f"sqlite:///{self.path}", future=True)
         Base.metadata.create_all(self.engine)
@@ -140,8 +151,11 @@ class Store:
         self._session = sessionmaker(self.engine, expire_on_commit=False)
 
     def _add_missing_columns(self) -> None:
-        """`create_all` only creates missing tables, so columns added after a
-        database was written have to be patched in explicitly."""
+        """Patch columns added after the database was first created.
+
+        ``create_all`` only creates missing tables, so new columns have to be
+        added explicitly.
+        """
         with self.engine.begin() as conn:
             for table, column, ddl in _ADDED_COLUMNS:
                 rows = conn.exec_driver_sql(f"PRAGMA table_info({table})").fetchall()
@@ -149,9 +163,15 @@ class Store:
                     conn.exec_driver_sql(f"ALTER TABLE {table} ADD COLUMN {ddl}")
 
     def session(self) -> Session:
+        """Return a new SQLAlchemy session."""
         return self._session()
 
     def upsert_epics(self, epics: list[Epic]) -> IngestReport:
+        """Insert or update epics on ``(tracker, external_id)``.
+
+        Returns:
+            Counts of imported vs updated rows.
+        """
         report = IngestReport()
         with self.session() as session:
             for epic in epics:
@@ -182,6 +202,7 @@ class Store:
         return report
 
     def upsert_children(self, children: list[ChildIssue]) -> int:
+        """Insert new children; update existing ones. Returns new-row count."""
         n = 0
         with self.session() as session:
             for child in children:
@@ -206,6 +227,7 @@ class Store:
         return n
 
     def replace_dependencies(self, tracker: str | Iterable[str], deps: list[Dependency]) -> None:
+        """Replace all dependency rows for the given tracker name(s)."""
         # Adapter name, adapter.id, and the tracker on each row can all differ.
         # Union them so re-ingest neither duplicates nor leaves stale links.
         names = {tracker} if isinstance(tracker, str) else set(tracker)
@@ -228,6 +250,7 @@ class Store:
             session.commit()
 
     def list_epics(self, *, status: str | None = None) -> list[Epic]:
+        """Return stored epics, optionally filtered by ``status``."""
         with self.session() as session:
             stmt = select(EpicRow)
             if status is not None:
@@ -236,6 +259,7 @@ class Store:
             return [_epic_from_row(r) for r in rows]
 
     def list_completed_epics(self) -> list[Epic]:
+        """Return done epics that have both a deadline and an actual completion."""
         return [
             e
             for e in self.list_epics(status="done")
@@ -243,6 +267,7 @@ class Store:
         ]
 
     def list_children(self) -> list[ChildIssue]:
+        """Return all stored child issues."""
         with self.session() as session:
             rows = session.scalars(select(ChildRow)).all()
             return [
@@ -260,6 +285,7 @@ class Store:
             ]
 
     def list_dependencies(self) -> list[Dependency]:
+        """Return all stored dependency links."""
         with self.session() as session:
             rows = session.scalars(select(DepRow)).all()
             return [
@@ -275,6 +301,7 @@ class Store:
             ]
 
     def artifact_dir(self) -> Path:
+        """Directory next to the DB file where serialized models are stored."""
         d = self.path.parent / f"{self.path.stem}_artifacts"
         d.mkdir(parents=True, exist_ok=True)
         return d
@@ -294,6 +321,7 @@ class Store:
         activate: bool,
         min_history: int = DEFAULT_MIN_HISTORY,
     ) -> ModelArtifact:
+        """Persist artifact metadata. If ``activate``, clear any previous active row."""
         art_id = uuid4()
         created = datetime.now(UTC)
         with self.session() as session:
@@ -337,6 +365,12 @@ class Store:
         )
 
     def get_artifact(self, model_id: UUID | str | None = None) -> ModelArtifact:
+        """Load the active artifact, or the one identified by ``model_id``.
+
+        Raises:
+            NoActiveModelError: No active artifact and ``model_id`` is omitted.
+            UsageError: ``model_id`` is unknown.
+        """
         with self.session() as session:
             if model_id is None:
                 row = session.scalars(
@@ -368,6 +402,7 @@ class Store:
             )
 
     def active_id(self) -> str | None:
+        """Return the active artifact id, or ``None`` if none is active."""
         with self.session() as session:
             row = session.scalars(
                 select(ArtifactRow).where(ArtifactRow.is_active.is_(True))
@@ -375,7 +410,9 @@ class Store:
             return None if row is None else row.id
 
     def train_row_count(self) -> int:
+        """Number of completed epics eligible for training."""
         return len(self.list_completed_epics())
 
     def close(self) -> None:
+        """Dispose the SQLAlchemy engine."""
         self.engine.dispose()

@@ -1,4 +1,7 @@
-"""Estimate team work predictability from epic-level deadline slip."""
+"""Estimate team work predictability from epic-level deadline slip.
+
+Public library surface: ``ingest``, ``train``, ``predict``, ``evaluate``.
+"""
 
 from predictability.evaluation.backtest import evaluate
 from predictability.ingest import ingest

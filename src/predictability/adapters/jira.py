@@ -33,10 +33,13 @@ def _parse_dt(value: str | None) -> datetime | None:
 
 
 class JiraAdapter:
+    """Jira epic adapter. Default tests use fixtures; live HTTP needs ``JIRA_TOKEN``."""
+
     id = "jira"
     display_name = "Jira"
 
     def __init__(self, config: Mapping[str, Any]) -> None:
+        """Bind team/due fields, epic types, and ``epic_done``."""
         self.config = dict(config)
         self.team_field = str(config.get("team_field", "customfield_team"))
         self.due_field = str(config.get("due_field", "duedate"))
@@ -44,12 +47,22 @@ class JiraAdapter:
         self.epic_done = epic_done_rule(config)
 
     def test_connection(self) -> None:
+        """Require ``JIRA_TOKEN`` unless ``fixture_path`` is set.
+
+        Raises:
+            AdapterAuthError: Live mode without a token.
+        """
         if self.config.get("fixture_path"):
             return
         if not os.environ.get("JIRA_TOKEN"):
             raise AdapterAuthError("JIRA_TOKEN is not set")
 
     def fetch(self, query: TrackerQuery) -> AdapterResult:
+        """Normalize fixture (or refuse live fetch in default tests).
+
+        Raises:
+            AdapterAuthError: No ``fixture_path`` in default CI mode.
+        """
         path = query.get("fixture_path") or self.config.get("fixture_path")
         if not path:
             raise AdapterAuthError("Jira live fetch is not used in default tests; set fixture_path")

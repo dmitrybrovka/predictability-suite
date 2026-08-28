@@ -9,6 +9,9 @@ alwaysApply: false
 - Target Python 3.11 (`from __future__ import annotations` only if needed).
 - Package imports: `from predictability...` (src layout). No `sys.path` hacks.
 - Type-annotate public functions. `mypy --strict` must pass.
+- Google-style docstrings on public classes and functions (`ruff` pydocstyle).
+  Types stay in signatures; Pydantic fields use `Field(description=...)`.
+  Do not duplicate types in `Args:`. mkdocstrings reads this later (`pip install -e ".[docs]"`).
 - Prefer `pathlib.Path` over `os.path`.
 - Pydantic v2 models for external payloads; no person-level fields on public types.
 - CLI: results on stdout, errors on stderr, no traceback on stdout.

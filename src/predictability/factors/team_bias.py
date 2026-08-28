@@ -23,14 +23,18 @@ _COLUMNS = (
 
 
 class TeamBiasFactor:
+    """Per-team mean/std/n of epic slip plus shrinkage weight. Default-on for GBM."""
+
     name = "team_bias"
     version = "1.0.0"
 
     def __init__(self, *, shrinkage_k: float = 10.0) -> None:
+        """Set the shrinkage prior strength ``k`` in ``w = n / (n + k)``."""
         self.shrinkage_k = shrinkage_k
         self._slips: list[tuple[str, datetime, float]] = []
 
     def fit(self, epics: Sequence[Epic], ctx: FactorContext) -> TeamBiasFactor:
+        """Store completed slips for leakage-safe transforms."""
         cal = ctx.calendar or CapacityCalendar()
         self._slips = []
         for epic in epics:
@@ -43,6 +47,7 @@ class TeamBiasFactor:
         return self
 
     def transform(self, epics: Sequence[Epic], ctx: FactorContext) -> FeatureFrame:
+        """Emit team bias columns using only slips completed before each deadline."""
         rows = []
         for epic in epics:
             cutoff = epic.committed_deadline

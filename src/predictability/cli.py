@@ -45,6 +45,15 @@ def _load_epics(path: Path) -> list[Epic]:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """Run the v1 CLI: ``ingest``, ``train``, ``predict``, ``evaluate``.
+
+    Args:
+        argv: Argument vector without the program name. ``None`` uses ``sys.argv``.
+
+    Returns:
+        Process exit code. ``0`` on success; 2-5 map ``PredictabilityError`` types.
+        JSON results go to stdout; errors and the evaluate table go to stderr.
+    """
     parser = argparse.ArgumentParser(prog="predictability")
     sub = parser.add_subparsers(dest="cmd", required=True)
 

@@ -19,16 +19,21 @@ from predictability.core.synthetic import generate_epics
 
 
 class MockAdapter:
+    """Fixture JSON or synthetic generator. No network."""
+
     id = "mock"
     display_name = "Mock"
 
     def __init__(self, config: Mapping[str, Any]) -> None:
+        """Keep adapter config for fixture path and generator defaults."""
         self.config = dict(config)
 
     def test_connection(self) -> None:
-        return None
+        """Always succeeds; mock has no credentials."""
+        return
 
     def fetch(self, query: TrackerQuery) -> AdapterResult:
+        """Load a fixture or generate synthetic epics from seed/n_teams/n_epics."""
         fixture = query.get("fixture_path") or self.config.get("fixture_path")
         if fixture:
             return self._from_fixture(Path(str(fixture)))

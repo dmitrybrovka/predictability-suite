@@ -25,16 +25,21 @@ _COLUMNS = (
 
 
 class CrossTeamDepsFactor:
+    """Foreign-team blocker load: epic links union child-link rollup, deduped by team."""
+
     name = "cross_team_deps"
     version = "1.0.0"
 
     def __init__(self, params: dict[str, Any] | None = None) -> None:
+        """Set walk ``max_depth`` (default 4). Cycles warn and do not fail ingest."""
         self.max_depth = int((params or {}).get("max_depth", 4))
 
     def fit(self, epics: Sequence[Epic], ctx: FactorContext) -> CrossTeamDepsFactor:
+        """No fitted state; graph is built at transform time from ``ctx``."""
         return self
 
     def transform(self, epics: Sequence[Epic], ctx: FactorContext) -> FeatureFrame:
+        """Emit foreign blocker counts, depth, and child-size columns."""
         children = list(ctx.children)
         deps = list(ctx.dependencies)
         child_by_id = {c.external_id: c for c in children}

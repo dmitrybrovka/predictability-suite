@@ -19,8 +19,23 @@ def build_results(
     min_history: int,
     quantile_levels: Sequence[float] = (0.5, 0.9),
 ) -> list[PredictabilityResult]:
-    """Assemble result rows. `team_history` counts completed epics per team in
-    the artifact's training window, so cold start does not depend on the backend."""
+    """Assemble result rows for epics that have a committed deadline.
+
+    ``team_history`` counts completed epics per team in the artifact's training
+    window, so cold start does not depend on the backend.
+
+    Args:
+        epics: Epics to score; rows without a deadline are skipped.
+        quantiles: Array of shape ``(n_epics, n_quantiles)``.
+        on_time: On-time probabilities aligned with ``epics``.
+        artifact: Serving artifact metadata copied onto each row.
+        team_history: Completed-epic counts keyed by ``team_id``.
+        min_history: Cold-start threshold from the artifact.
+        quantile_levels: Labels matching columns of ``quantiles``.
+
+    Returns:
+        One ``PredictabilityResult`` per eligible epic.
+    """
     results: list[PredictabilityResult] = []
     q_keys = [str(q) for q in quantile_levels]
     for i, epic in enumerate(epics):

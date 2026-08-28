@@ -26,6 +26,7 @@ _BUILTINS: dict[str, type] = {
 
 
 def factor_set_hash(specs: Sequence[FactorSpec]) -> str:
+    """Stable short hash of enabled factor names, versions, and params."""
     payload = [
         {"name": s.name, "enabled": s.enabled, "version": s.version, "params": s.params}
         for s in specs
@@ -44,6 +45,11 @@ def effective_factor_specs(config: AppConfig) -> list[FactorSpec]:
 
 
 def instantiate(spec: FactorSpec) -> Factor:
+    """Construct a built-in or plugin factor.
+
+    Raises:
+        KeyError: Unknown factor name.
+    """
     try:
         cls = get_plugin(FACTORS, spec.name)
     except UsageError:

@@ -1,1 +1,1 @@
-"""SQLite persistence."""
+"""SQLite persistence for epics and model artifacts."""

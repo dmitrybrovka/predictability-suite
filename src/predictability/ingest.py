@@ -24,6 +24,7 @@ _ADAPTERS: dict[str, type] = {
 
 
 def register_adapter(name: str, cls: type) -> None:
+    """Register an in-process adapter fallback used when entry points are missing."""
     _ADAPTERS[name] = cls
 
 
@@ -52,6 +53,21 @@ def ingest(
     *,
     config: AppConfig | None = None,
 ) -> IngestReport:
+    """Fetch from ``adapter``, skip unmapped/no-deadline rows, and upsert SQLite.
+
+    Args:
+        adapter: Registry name (``mock``, ``jira``, ``youtrack``, or a plugin).
+        query: Adapter query (JQL, fixture path, mock seed, …).
+        db: SQLite path.
+        config: App config; adapter settings are read from ``adapters.<name>``.
+
+    Returns:
+        Import/update/skip counts. Dependencies for this tracker are replaced.
+
+    Raises:
+        UsageError: Unknown adapter name.
+        AdapterError: Connection or fetch failed.
+    """
     cfg = config or AppConfig.load()
     adapter_cfg = dict(cfg.adapters.get(adapter) or {})
     inst = _adapter(adapter, adapter_cfg)

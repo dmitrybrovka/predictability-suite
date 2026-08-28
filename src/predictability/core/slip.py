@@ -13,6 +13,19 @@ def compute_slip(
     unit: SlipUnit = "working_days",
     calendar: CapacityCalendar | None = None,
 ) -> Slip:
+    """Compute signed slip for a completed epic.
+
+    Args:
+        epic: Must have both committed deadline and actual completion.
+        unit: ``working_days`` (default) or ``calendar_days``.
+        calendar: Weekend/holiday calendar. Vacations do not change slip.
+
+    Returns:
+        Slip with the same tracker/external_id as ``epic``.
+
+    Raises:
+        UsageError: Missing timestamps or unknown ``unit``.
+    """
     if epic.actual_completed_at is None or epic.committed_deadline is None:
         msg = "slip requires committed_deadline and actual_completed_at"
         raise UsageError(msg)

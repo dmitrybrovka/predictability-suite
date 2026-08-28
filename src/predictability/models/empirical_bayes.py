@@ -19,11 +19,14 @@ _EPS = 1e-6
 
 
 class EmpiricalBayesBackend:
+    """Team-slip shrinkage baseline. Prior is the global mean estimated from data."""
+
     name = "empirical_bayes"
     version = "1.0.0"
     quantiles: Sequence[float] = (0.5, 0.9)
 
     def __init__(self, *, shrinkage_k: float = 10.0, min_history: int = 20) -> None:
+        """Set shrinkage ``k`` and the cold-start threshold ``min_history``."""
         self.shrinkage_k = shrinkage_k
         self.min_history = min_history
         self.global_mean = 0.0
@@ -34,6 +37,11 @@ class EmpiricalBayesBackend:
     def fit(
         self, x: FeatureFrame, slip: NDArray[Any], meta: Mapping[str, Any]
     ) -> EmpiricalBayesBackend:
+        """Estimate global and per-team Gaussian slip parameters.
+
+        Raises:
+            EmptyTrainSetError: ``slip`` is empty.
+        """
         if len(slip) == 0:
             raise EmptyTrainSetError("no completed epics to train on")
         self.shrinkage_k = float(meta.get("shrinkage_k", self.shrinkage_k))
@@ -72,6 +80,11 @@ class EmpiricalBayesBackend:
     def predict_quantiles(
         self, x: FeatureFrame, quantiles: Sequence[float] | None = None
     ) -> NDArray[Any]:
+        """Return Gaussian quantile slip. Teams below ``min_history`` use the global prior.
+
+        Raises:
+            UsageError: Called before ``fit``.
+        """
         if not self._fitted:
             raise UsageError("empirical_bayes is not fitted")
         qs = list(quantiles if quantiles is not None else self.quantiles)
@@ -84,6 +97,11 @@ class EmpiricalBayesBackend:
         return out
 
     def predict_on_time_proba(self, x: FeatureFrame) -> NDArray[Any]:
+        """Return P(slip <= 0) from the same Gaussian as the quantiles.
+
+        Raises:
+            UsageError: Called before ``fit``.
+        """
         if not self._fitted:
             raise UsageError("empirical_bayes is not fitted")
         out = np.zeros(len(x))
@@ -93,6 +111,7 @@ class EmpiricalBayesBackend:
         return out
 
     def save(self, path: Path) -> None:
+        """Write ``model.json`` under ``path``."""
         target = path / "model.json" if path.is_dir() or path.suffix == "" else path
         if target.parent:
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -113,6 +132,7 @@ class EmpiricalBayesBackend:
 
     @classmethod
     def load(cls, path: Path) -> EmpiricalBayesBackend:
+        """Restore from ``model.json`` in ``path``."""
         target = path / "model.json" if path.is_dir() else path
         data = json.loads(target.read_text(encoding="utf-8"))
         obj = cls(shrinkage_k=data["shrinkage_k"], min_history=data["min_history"])
@@ -125,5 +145,6 @@ class EmpiricalBayesBackend:
 
 
 def identity_frame(team_ids: Sequence[str], epic_ids: Sequence[str] | None = None) -> pd.DataFrame:
+    """Minimal feature frame with only ``team_id``, for tests and the Bayes backend."""
     idx = list(epic_ids) if epic_ids is not None else [str(i) for i in range(len(team_ids))]
     return pd.DataFrame({"team_id": list(team_ids)}, index=idx)

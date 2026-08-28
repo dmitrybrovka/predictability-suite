@@ -22,11 +22,13 @@ class CapacityCalendar:
         weekend: Iterable[int] | None = None,
         holidays: Iterable[date | datetime] | None = None,
     ) -> None:
+        """Configure weekend days and holidays. Vacations are not applied here."""
         self.timezone = timezone
         self.weekend = set(weekend if weekend is not None else (5, 6))
         self.holidays = {_as_date(h) for h in (holidays or ())}
 
     def is_working_day(self, day: date) -> bool:
+        """Return True when ``day`` is not a weekend or holiday."""
         if day.weekday() in self.weekend:
             return False
         return day not in self.holidays
@@ -47,4 +49,5 @@ class CapacityCalendar:
         return float(count)
 
     def signed_calendar_days(self, start: datetime | date, end: datetime | date) -> float:
+        """Signed calendar-day difference (end minus start)."""
         return float((_as_date(end) - _as_date(start)).days)

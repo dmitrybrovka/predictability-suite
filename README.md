@@ -1,12 +1,21 @@
 # Predictability Suite
 
 Python library and CLI that estimates **team work predictability** from
-epic-level deadline slip (first changelog due date vs actual completion).
+epic-level deadline slip: first changelog due date vs actual completion.
 
 v1 is a local library + CLI over SQLite. HTTP service is v2.
 
 Spec: [`specs/001-team-work-predictability/spec.md`](specs/001-team-work-predictability/spec.md).
 Constitution: [`.specify/memory/constitution.md`](.specify/memory/constitution.md).
+
+Public functions use **Google-style** docstrings. Types live in signatures;
+Pydantic models use `Field(description=...)`. [`docs/api.md`](docs/api.md) is the
+mkdocstrings inventory (which modules to document). HTML is built separately:
+
+```bash
+pip install -e ".[docs]"
+mkdocs serve
+```
 
 ## Requirements
 
@@ -28,14 +37,22 @@ Optional extras for model backends: `pip install -e ".[dev,catboost,gbm]"`.
 ```python
 from predictability import train, predict
 from predictability.core.config import AppConfig
+
 from predictability.core.synthetic import open_epic, two_team_history
 from predictability.store.sqlite import Store
 
+# Define storage
 store = Store("predictability.sqlite")
+
+# Two teams, 40 completed epics each; constant slip 12 vs 0 (not random).
 store.upsert_epics(two_team_history(n_per_team=40, late_slip=12, ontime_slip=0))
+
 cfg = AppConfig({"model": {"min_history": 5}})
 train("empirical_bayes", "predictability.sqlite", config=cfg)
+
+# Open epics for the same team ids (no completion date).
 late, ontime = open_epic("late-team"), open_epic("ontime-team")
+
 rows = predict("predictability.sqlite", epics=[late, ontime], config=cfg)
 assert rows[0].on_time_probability < rows[1].on_time_probability
 ```
@@ -110,15 +127,81 @@ spec-kit assets tracked by hash in `.specify/integrations/*.manifest.json`.
 Do not add a second Python linter or formatter. Tests are required for all
 production code (constitution III). Default pytest MUST NOT call live trackers.
 
-## Layout
+## Architecture
 
-```text
-src/predictability/     # library
-tests/unit/
-tests/contract/
-tests/integration/
-.pre-commit-config.yaml
-pyproject.toml
+### Logical
+
+What lives in the package. Arrows are **uses**, not data movement. Jira and YouTrack are outside this diagram; only ingest adapters talk to them.
+
+```mermaid
+flowchart TB
+  subgraph surfaces["Surfaces"]
+    direction LR
+    lib["library API"]
+    cli["CLI"]
+    pymain["python -m predictability"]
+    pymain --> cli
+  end
+
+  subgraph commands["Commands"]
+    direction LR
+    ingest["ingest"]
+    train["train"]
+    predict["predict"]
+    evaluate["evaluate"]
+  end
+
+  subgraph domain["Domain"]
+    direction LR
+    adapters["adapters"]
+    core["core"]
+    factors["factors"]
+    models["models"]
+  end
+
+  subgraph persistence["Persistence"]
+    direction LR
+    store["SQLite store"]
+    config["YAML config"]
+  end
+
+  lib --> commands
+  cli --> commands
+  commands --> domain
+  domain --> persistence
+  commands --> persistence
+```
+
+### Data flow
+
+Arrows are **data**. Library and CLI share one SQLite file. Dashed `Jira / YouTrack` is an optional live fetch (default ingest uses mock or fixtures). `evaluate` reads the same store and writes a report; it does not write the active artifact.
+
+```mermaid
+flowchart TB
+  subgraph libFlow["Library — Scenario A"]
+    direction LR
+    synth["synthetic epics"] --> upsert["Store.upsert_epics"]
+    upsert --> dbL[("SQLite")]
+    dbL --> trainL["train"]
+    trainL --> artL["active artifact"]
+    artL --> predL["predict"]
+    openL["open epics"] --> predL
+    predL --> outL["PredictabilityResult"]
+  end
+
+  subgraph cliFlow["CLI — Scenarios B, D–H"]
+    direction LR
+    mock["mock / fixtures"] --> adp["adapters"]
+    live["Jira / YouTrack"] -.-> adp
+    adp --> dbC[("SQLite")]
+    dbC --> trainC["train"]
+    trainC --> artC["active artifact"]
+    artC --> predC["predict"]
+    openC["file / --status open"] --> predC
+    predC --> outC["JSON results"]
+    dbC --> ev["evaluate"]
+    ev --> report["EvaluationReport"]
+  end
 ```
 
 ## License

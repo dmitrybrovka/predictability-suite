@@ -1,1 +1,1 @@
-"""Tracker adapters (mock, Jira, YouTrack)."""
+"""Tracker adapters (Jira, YouTrack, mock)."""

@@ -17,6 +17,7 @@ from predictability.factors.base import FactorContext, FeatureFrame
 
 
 def load_vacations(path: Path | None) -> list[tuple[str, date, date, float]]:
+    """Load team vacation intervals from YAML. Missing file yields an empty list."""
     if path is None or not path.is_file():
         return []
     raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
@@ -32,6 +33,7 @@ def load_vacations(path: Path | None) -> list[tuple[str, date, date, float]]:
 
 
 def load_holidays(path: Path | None) -> list[date]:
+    """Load org holiday dates from YAML. Missing file yields an empty list."""
     if path is None or not path.is_file():
         return []
     raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
@@ -49,10 +51,13 @@ def calendar_from_config(cfg: AppConfig) -> CapacityCalendar:
 
 
 class CapacityCalendarFactor:
+    """Working-day vacation and holiday overlap on the committed window."""
+
     name = "capacity_calendar"
     version = "1.0.0"
 
     def __init__(self, params: dict[str, Any] | None = None) -> None:
+        """Read vacation/holiday paths and timezone from factor ``params``."""
         params = params or {}
         self.vacations_path = (
             Path(params["vacations_path"]) if params.get("vacations_path") else None
@@ -66,6 +71,7 @@ class CapacityCalendarFactor:
         )
 
     def fit(self, epics: Sequence[Epic], ctx: FactorContext) -> CapacityCalendarFactor:
+        """Merge context vacations/holidays with those loaded from params."""
         if ctx.vacations:
             self.vacations = [(t, _as_date(a), _as_date(b), f) for t, a, b, f in ctx.vacations]
         if ctx.calendar is not None:
@@ -76,6 +82,7 @@ class CapacityCalendarFactor:
         return self
 
     def transform(self, epics: Sequence[Epic], ctx: FactorContext) -> FeatureFrame:
+        """Count vacation and holiday overlap days; weekends are not double-counted."""
         cal = ctx.calendar or self.calendar
         rows = []
         for epic in epics:

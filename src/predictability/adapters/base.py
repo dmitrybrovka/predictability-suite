@@ -17,6 +17,8 @@ EPIC_DONE_RULES: tuple[EpicDoneRule, ...] = ("own", "children", "own_then_childr
 
 
 class TrackerQuery(TypedDict, total=False):
+    """Fetch query. Adapters read the keys they understand and ignore the rest."""
+
     jql: str
     youtrack_query: str
     project: str
@@ -29,20 +31,30 @@ class TrackerQuery(TypedDict, total=False):
 
 @dataclass
 class AdapterResult:
+    """Canonical epics, children, and dependencies from one fetch."""
+
     epics: list[Epic] = field(default_factory=list)
     children: list[ChildIssue] = field(default_factory=list)
     dependencies: list[Dependency] = field(default_factory=list)
 
 
 class TrackerAdapter(Protocol):
+    """Map a task tracker into canonical epics. Changelog of due dates is required."""
+
     id: str
     display_name: str
 
-    def __init__(self, config: Mapping[str, Any]) -> None: ...
+    def __init__(self, config: Mapping[str, Any]) -> None:
+        """Bind adapter field maps, ``epic_done``, and credentials config."""
+        ...
 
-    def test_connection(self) -> None: ...
+    def test_connection(self) -> None:
+        """Raise ``AdapterAuthError`` when live credentials are missing."""
+        ...
 
-    def fetch(self, query: TrackerQuery) -> AdapterResult: ...
+    def fetch(self, query: TrackerQuery) -> AdapterResult:
+        """Return canonical rows. Default CI uses fixtures, not live HTTP."""
+        ...
 
 
 def first_changelog_due(
@@ -60,6 +72,11 @@ def first_changelog_due(
 
 
 def epic_done_rule(config: Mapping[str, Any]) -> EpicDoneRule:
+    """Return ``epic_done`` from adapter config (default ``own_then_children``).
+
+    Raises:
+        UsageError: Value is not one of ``own``, ``children``, ``own_then_children``.
+    """
     rule = str(config.get("epic_done", "own_then_children"))
     if rule not in EPIC_DONE_RULES:
         msg = f"epic_done must be one of {', '.join(EPIC_DONE_RULES)}; got {rule!r}"

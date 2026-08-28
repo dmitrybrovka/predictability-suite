@@ -30,6 +30,21 @@ def evaluate(
     min_train: int = 50,
     horizon_epics: int = 30,
 ) -> EvaluationReport:
+    """Walk-forward compare ``backends`` on stored completed epics.
+
+    Does not read or write ``is_active``. A missing GBM extra becomes an error
+    row; other backends still complete.
+
+    Args:
+        db: SQLite path.
+        backends: Registry names to evaluate.
+        config: Factor/model settings.
+        min_train: Expanding origin size (shrunk if the history is smaller).
+        horizon_epics: Future epics scored at each origin.
+
+    Returns:
+        Side-by-side metrics (MAE, pinball, Brier, interval coverage).
+    """
     cfg = config or AppConfig.load()
     store = Store(db)
     # Intentionally do not touch is_active.

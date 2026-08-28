@@ -13,11 +13,17 @@ MODELS = "predictability.models"
 
 
 def load_plugins(group: str) -> dict[str, Any]:
+    """Load ``importlib.metadata`` entry points for ``group`` keyed by name."""
     selected = entry_points().select(group=group)
     return {ep.name: ep.load() for ep in selected}
 
 
 def get_plugin(group: str, name: str) -> Any:
+    """Return the loaded plugin class for ``name``.
+
+    Raises:
+        UsageError: Unknown name in that group.
+    """
     plugins = load_plugins(group)
     if name not in plugins:
         msg = f"unknown {group} plugin {name!r}; known: {sorted(plugins)}"

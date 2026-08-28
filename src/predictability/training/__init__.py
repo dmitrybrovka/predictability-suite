@@ -1,1 +1,1 @@
-"""Full-refit training."""
+"""Full-refit training and serving predict."""

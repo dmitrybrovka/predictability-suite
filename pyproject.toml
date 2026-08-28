@@ -39,6 +39,11 @@ dev = [
   "ruff==0.16.4",
   "types-PyYAML>=6.0",
 ]
+docs = [
+  "mkdocs>=1.6",
+  "mkdocs-material>=9.5",
+  "mkdocstrings[python]>=0.27",
+]
 
 [project.scripts]
 predictability = "predictability.cli:main"
@@ -69,7 +74,7 @@ path = "src/predictability/__init__.py"
 packages = ["src/predictability"]
 
 [tool.hatch.build.targets.sdist]
-include = ["src/predictability", "tests", "LICENSE", "README.md"]
+include = ["src/predictability", "tests", "LICENSE", "README.md", "docs", "mkdocs.yml"]
 
 [tool.ruff]
 target-version = "py311"
@@ -79,6 +84,7 @@ src = ["src", "tests"]
 [tool.ruff.lint]
 select = [
   "B",
+  "D",
   "E",
   "F",
   "I",
@@ -93,6 +99,12 @@ select = [
   "W",
 ]
 ignore = ["E501"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D"]
 
 [tool.ruff.format]
 quote-style = "double"

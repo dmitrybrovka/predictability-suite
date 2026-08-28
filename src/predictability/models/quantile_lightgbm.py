@@ -26,11 +26,14 @@ def _require_lgb() -> Any:
 
 
 class QuantileLightGBMBackend:
+    """Quantile LightGBM backend. Requires the ``[gbm]`` extra."""
+
     name = "quantile_lightgbm"
     version = "1.0.0"
     quantiles: Sequence[float] = (0.5, 0.9)
 
     def __init__(self) -> None:
+        """Create an unfitted backend."""
         self._models: dict[str, Any] = {}
         self._columns: list[str] = []
         self._fitted = False
@@ -44,6 +47,11 @@ class QuantileLightGBMBackend:
     def fit(
         self, x: FeatureFrame, slip: NDArray[Any], meta: Mapping[str, Any]
     ) -> QuantileLightGBMBackend:
+        """Fit one LightGBM quantile model per requested quantile.
+
+        Raises:
+            ExtraMissingError: ``predictability[gbm]`` is not installed.
+        """
         lgb = _require_lgb()
         qs = tuple(float(q) for q in (meta.get("quantiles") or self.quantiles))
         self.quantiles = qs
@@ -65,6 +73,11 @@ class QuantileLightGBMBackend:
     def predict_quantiles(
         self, x: FeatureFrame, quantiles: Sequence[float] | None = None
     ) -> NDArray[Any]:
+        """Return slip quantiles with shape ``(n_epics, n_quantiles)``.
+
+        Raises:
+            UsageError: Called before ``fit``.
+        """
         if not self._fitted:
             raise UsageError("quantile_lightgbm is not fitted")
         qs = list(quantiles if quantiles is not None else self.quantiles)
@@ -73,10 +86,12 @@ class QuantileLightGBMBackend:
         return np.column_stack(cols)
 
     def predict_on_time_proba(self, x: FeatureFrame) -> NDArray[Any]:
+        """Approximate P(slip <= 0) as a logistic of p50, not a Gaussian CDF."""
         q50 = self.predict_quantiles(x, [0.5])[:, 0]
         return 1.0 / (1.0 + np.exp(q50 / 5.0))
 
     def save(self, path: Path) -> None:
+        """Pickle booster dicts and write ``meta.json`` into ``path``."""
         import pickle
 
         path.mkdir(parents=True, exist_ok=True)
@@ -86,6 +101,11 @@ class QuantileLightGBMBackend:
 
     @classmethod
     def load(cls, path: Path) -> QuantileLightGBMBackend:
+        """Restore from ``path``.
+
+        Raises:
+            ExtraMissingError: ``predictability[gbm]`` is not installed.
+        """
         import pickle
 
         _require_lgb()
